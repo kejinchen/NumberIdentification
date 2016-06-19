@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.4.js"></script>
+</head>
+<body>
+ <div id="dCanvas">  
+  <!--寫字畫布-->
+  <canvas id="SketchPad" width="300" height="300" style="border: 2px solid gray" />
+  </div>
+  <!--開始按鈕-->
+ <button onclick="myFunction()">START</button>
+ <!--顯示結果區-->
+ <p id="demo"></p>
+<script>
+    var p_color = "black";
+    var p_width = 3;
+    var path = [];
+      $(function () {
+          //取得canvas context
+          var $canvas = $("#SketchPad");
+          var ctx = $canvas[0].getContext("2d");
+          ctx.lineCap = "round";
+          ctx.fillStyle = "white"; 
+          ctx.fillRect(0, 0, $canvas.width(), $canvas.height());
+          var drawMode = false;  
+          //canvas點選、移動、放開按鍵事件時進行繪圖動作
+            $canvas.mousedown(function (e) {
+              ctx.beginPath();
+              ctx.strokeStyle = p_color;
+              ctx.lineWidth = p_width;
+              var x = e.pageX - $canvas.position().left;
+              var y = e.pageY - $canvas. position().top;
+              path.push({x:x,y:y});
+              ctx.moveTo(x, y);
+              drawMode = true;
+            })
+            .mousemove(function (e) {
+                if (drawMode) {
+                var x = e.pageX - $canvas.position().left;
+                var y = e.pageY - $canvas.position().top;
+                path.push({x:x,y:y});
+                   ctx.lineTo(x,y);
+                   ctx.stroke();
+                }
+            })
+            .mouseup(function (e) {
+                drawMode = false;       
+            });
+        });
+function randInt(a, b) { 
+    return Math.floor((Math.random() * (b-a+1)) + a);
+}
+//將軌跡資料統一為40筆
+function dataunite(str){
+  var Dmax=40;
+  var len = str.length;
+  var fp=[];
+  var e=[];
+  //資料大於40筆則隨機將多於的資料刪除
+  if(len>Dmax){
+    var more = len-Dmax;//超過的個數
+    //隨機選出多餘的點
+    for(var i=0;i<more;i++){
+      e[i] =randInt(1,len-2);
+      for(var j=0;j<i;j++){
+        while(e[j]===e[i]){
+          e[i]=randInt(1,len-2);
+          j=0;
+        }
+      }
+      var x=e[i];
+      str[x]=0;
+    }
+    console.log(str);
+    //放入新陣列
+    for(var i=0;i<len;i++){
+      if(str[i]!==0){
+        fp.push(str[i]);
+      }
+    }
+    return fp; 
+  }
+  //資料少於40筆
+  for(var i=0;i<Dmax;i++){
+  return null;
+  }
+} 
+//歐氏距離計算
+function Euclideandistance(path,ref){
+  var data=[];
+  for(var i=0; i<10; i++){
+    var eu=0;
+    var n=ref[i];
+    for (var j=0; j<path.length; j++) {
+      eu+=(path[j].x-n[j].x)*(path[j].x-n[j].x)+(path[j].y-n[j].y)*(path[j].y-n[j].y);
+    }
+    data[i]= Math.sqrt(eu); 
+  }
+return data;
+}
+//辨識結果
+function Identification(path,ref){
+  var result=Euclideandistance(path,ref);
+  var p=result[0];
+  for(var i=1;i<result.length;i++){
+    if(p>result[i]){
+      p=result[i];
+    }
+  }
+  var cont;
+  for(var i=0;i<result.length;i++){   
+    if(p===result[i]){
+        cont=i;
+    }
+  }
+  switch(cont) {
+    case 0:
+      return 1
+    case 1:
+      return 2
+    case 2:
+      return 3
+    case 3:
+      return 4
+    case 4:
+      return 5
+    case 5:
+      return 6
+    case 6:
+      return 7
+    case 7:
+      return 8
+    case 8:
+      return 9
+    case 9:
+      return 0
+  }
+}
+//按鈕送出功能
+function myFunction() {
+    var socket = io();
+    var canvas = document.getElementById('SketchPad');
+    var context = canvas.getContext('2d');
+    var ax=[];
+    ax=dataunite(path);
+    if(ax===null){ 
+       document.getElementById("demo").innerHTML="資料不足無法辨識";      
+       context.clearRect(0,0,300,300);
+       path = [];
+    }
+    else{
+    //document.getElementById("demo").innerHTML =JSON.stringify(x);
+    socket.emit('drawPath', ax);   
+    //把軌跡送到伺服端
+    socket.on('drawPath', function(ref){ 
+        //document.getElementById("demo").innerHTML="辨識中"; 
+        var result =Identification(ax,ref);
+        document.getElementById("demo").innerHTML =result;
+       //清除寫字畫布陣列清除 
+       context.clearRect(0,0,300,300);
+       path = [];
+    });
+    }
+}
+</script>
+</body>
+</html>
